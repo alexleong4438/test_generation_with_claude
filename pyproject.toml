@@ -1,0 +1,40 @@
+[project]
+name = "backend_api_test_generator"
+version = "0.1.0"
+description = "Backend API Test Generator using CrewAI - Generates comprehensive API tests from Jira requirements"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "crewai[tools]>=0.117.1,<1.0.0",
+    "langchain-aws>=0.1.0",
+    "httpx>=0.25.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-xdist>=3.0.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0.0",
+    "requests>=2.31.0",
+    "Pillow>=10.0.0",
+    "psutil>=7.0.0",
+    "GitPython>=0.3.2"
+]
+
+[project.scripts]
+generate_api_tests = "main:main"
+backend_api_test_generator = "main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/test_generation_with_claude"]
+
+[tool.crewai]
+type = "crew"
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+]

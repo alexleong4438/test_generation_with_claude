@@ -1,0 +1,46 @@
+# Core Dependencies
+crewai[tools]>=0.117.1,<1.0.0
+langchain-aws>=0.1.0
+
+# HTTP and API Testing
+httpx>=0.25.0
+requests>=2.31.0
+
+# Testing Framework
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-xdist>=3.0.0
+pytest-cov>=4.0.0
+
+# Data Handling
+pydantic>=2.0.0
+pyyaml>=6.0.0
+python-dotenv>=1.0.0
+
+# Git and Repository Management (new)
+GitPython>=3.1.0
+dulwich>=0.21.0
+
+# Code Analysis and AST Parsing (new)
+ast>=0.1.0
+
+# Development Tools
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Optional Dependencies for Enhanced Features
+Pillow>=10.0.0  # For image handling in tests
+docker>=6.0.0   # For Docker integration
+boto3>=1.26.0   # For AWS services
+
+# Documentation
+mkdocs>=1.5.0
+mkdocs-material>=9.0.0
+
+# Additional dependencies for enhanced workflow
+pathlib>=1.0.1  # For path operations (usually built-in)
+tempfile  # For temporary file operations (built-in)
+shutil  # For file operations (built-in)
+fnmatch  # For pattern matching (built-in)
+re  # For regex operations (built-in)

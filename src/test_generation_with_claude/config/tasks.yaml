@@ -1,0 +1,405 @@
+# Backend API Test Generation Tasks with Bitbucket Integration
+
+clone_and_analyze_repository:
+  description: >
+    Clone the Bitbucket repository and analyze current test coverage
+    
+    Repository: {bitbucket_repo}
+    Branch: {bitbucket_branch}
+    
+    Analysis steps:
+    1. Clone repository to workspace
+    2. Read README and documentation files
+    3. Analyze existing test structure
+    4. Identify test patterns and conventions
+    5. Map current test coverage
+    
+    Extract:
+    - Test framework used (pytest, unittest, etc.)
+    - Test organization patterns
+    - Existing fixtures and utilities
+    - Testing conventions and naming
+    - Coverage gaps
+  expected_output: >
+    Repository analysis report containing:
+    - Current test coverage summary
+    - Test structure and patterns
+  agent: bitbucket_analyst
+  output_file: "output/1_repo_analysis.json"
+
+extract_api_requirements:
+  description: >
+    Extract API testing requirements from Jira ticket {jira_key}
+    
+    Focus on:
+    1. API endpoints mentioned in the ticket
+    2. Acceptance criteria related to API behavior
+    3. Response format requirements
+    4. Error scenarios to test
+    5. Performance requirements if any
+    
+    Extract:
+    - Endpoint URLs and HTTP methods
+    - Required request parameters
+    - Expected response formats
+    - Error conditions to test
+    - Authentication requirements
+  expected_output: >
+    JSON document containing:
+    - List of API endpoints to test
+    - Acceptance criteria for each endpoint
+    - Test scenarios (happy path, error cases)
+    - Performance requirements
+  agent: jira_requirements_analyst
+  output_file: "output/2_requirements_{jira_key}.json"
+
+analyze_api_endpoints:
+  description: >
+    Read and analyze the API endpoint details specification from: {backend_paths}
+    
+    Framework: {framework} (FastAPI/Django)
+    
+    Extract:
+    1. All API endpoints (path, method, handler)
+    2. Request schemas/serializers
+    3. Response schemas/models
+    4. Authentication decorators
+    5. Validation rules
+    6. Error handlers
+    
+    For each endpoint provide:
+    - Full URL path with parameters
+    - HTTP method
+    - Request body schema
+    - Response schema
+    - Authentication requirements
+    - Possible error responses
+  expected_output: >
+    Comprehensive API specification including:
+    - Endpoint inventory with schemas
+    - Authentication matrix
+    - Error response catalog
+    - Validation rules
+  agent: api_analyzer
+  output_file: "output/3_api_analysis_{jira_key}.json"
+
+design_api_test_scenarios:
+  description: >
+    Design comprehensive test scenarios for identified API endpoints
+    
+    For each endpoint, create test cases for:
+    1. Happy path - valid requests with expected responses
+    2. Authentication - authorized/unauthorized access
+    3. Validation - invalid inputs, boundary values
+    4. Error handling - 4xx and 5xx responses
+    5. Edge cases - empty data, special characters, large payloads
+    
+    Consider:
+    - Different user roles/permissions
+    - Rate limiting scenarios
+    - Concurrent request handling
+    - Database state dependencies
+    
+    Prioritize tests by:
+    - Business criticality
+    - Code complexity
+    - Historical bug frequency  
+  expected_output: >
+    Test scenario document with structured JSON containing test cases for each endpoint.
+    Each test case should include: name, method, endpoint, expected_status, expected_response, priority, execution_order.
+    
+    Example format:
+    [
+      {
+        "name": "Test Performance - Response Time",
+        "method": "GET", 
+        "endpoint": "/v1/partners/123/reports/performance",
+        "expected_status": 200,
+        "expected_response": null,
+        "priority": "High",
+        "execution_order": 1
+      },
+      ...
+    ]
+  agent: test_strategist
+  output_file: "output/4_test_scenarios_{jira_key}.json"
+
+generate_api_test_fixtures:
+  description: >
+    Generate pytest fixtures for API testing
+    
+    Create reusable fixtures for:
+    1. HTTP client configuration (httpx/requests)
+    2. Authentication helpers (tokens, headers)
+    3. Test data factories
+    4. Database setup/teardown
+    5. Mock external services
+    
+    Fixtures should be:
+    - Scoped appropriately (session/module/function)
+    - Parametrizable for different environments
+    - Include cleanup/teardown logic
+    - Well-documented with docstrings
+  expected_output: >
+    A complete Python script file containing only:
+    - Import statements
+    - Function definitions
+    - Class definitions (if needed)
+    - Main execution code
+    - Code comments (using # or docstrings)
+    NO explanations, NO markdown, NO additional text, NO ```python``` text.
+  agent: api_test_generator
+  output_file: "tests/conftest.py"
+
+generate_or_modify_api_tests:
+  description: >
+      Based on the comprehensive analysis from previous tasks, delegate the generation or modification of API tests using predefined templates
+    
+      Required inputs from previous tasks:
+      - API requirements (from extract_api_requirements)
+      - API endpoint specifications (from analyze_api_endpoints)
+      - Test scenarios design (from design_api_test_scenarios)
+      
+      Delegation workflow:
+      1. LOAD test template:
+        - Use the template_file_reader tool to load the pytest template
+        - Template path: templates/test_template.py or test_templates/pytest_template.py
+        - If template not found, check alternative paths: tests/templates/, .templates/
+        - Extract the template structure and placeholder patterns
+      
+      2. ANALYZE previous outputs to determine test generation strategy:
+        - Review existing test coverage gaps from repo_analysis.json
+        - Map test scenarios to actual API endpoints
+        - Identify which tests need modification vs new creation
+        - Group all test scenarios by their corresponding endpoints
+        - Map template placeholders to actual values:
+          * [EndpointName] -> PascalCase endpoint name (e.g., Items, Users)
+          * [endpoint_name] -> lowercase endpoint name (e.g., items, users)
+          * [endpoint_path] -> actual endpoint path (e.g., items, users)
+          * [entity] -> singular form (e.g., item, user)
+          * [entities] -> plural form (e.g., items, users)
+      
+      3. DELEGATE test generation based on test type:
+        a) For EXISTING tests requiring modification:
+            - Load current test file content
+            - Identify specific test classes for each endpoint
+            - Preserve existing test patterns and conventions
+            - Use template structure to add missing test methods
+            - Update assertions based on api_analysis_{jira_key}.json
+        
+        b) For NEW tests to be created:
+            - Use the loaded template as the base structure
+            - Replace ALL template placeholders with actual values
+            - Create one test class per endpoint following template pattern
+            - Implement all scenarios from design phase as methods
+            - Ensure template structure is preserved (imports, class structure, helper methods)
+            - Apply repository naming conventions
+      
+      4. CUSTOMIZE template for each endpoint:
+        - Replace generic template placeholders with endpoint-specific values
+        - Add/remove test methods based on endpoint capabilities:
+          * Remove DELETE tests for read-only endpoints
+          * Remove UPDATE tests for create-only endpoints
+          * Add specific validation tests based on endpoint requirements
+        - Update request/response schemas based on api_analysis_{jira_key}.json
+        - Customize test data and fixtures for the specific endpoint
+        - Add endpoint-specific assertions and validations
+      
+      5. ENSURE generated tests:
+        - Maintain the exact structure and style from the template
+        - Each endpoint has its own dedicated test class
+        - All test methods follow template naming conventions
+        - Cover all acceptance criteria from requirements_{jira_key}.json
+        - Include self-contained fixtures matching template patterns
+        - Include proper error handling as shown in template
+        - Follow the testing framework patterns from template
+        - Preserve template's docstring style and comments
+      
+      6. VALIDATE test completeness:
+        - Cross-reference with all identified endpoints
+        - Verify each endpoint has a corresponding test class
+        - Verify all test scenarios are implemented as class methods
+        - Ensure template structure is maintained (no missing sections)
+        - Add Xray markers linking to {jira_key}
+        - Confirm all template helper methods are properly customized
+      
+      Test implementation requirements:
+      - MUST use the loaded template structure exactly
+      - Preserve all template sections:
+        * Import statements (update as needed)
+        * Class-level docstrings
+        * Setup/teardown methods
+        * Test method organization (CREATE, READ, UPDATE, DELETE sections)
+        * Helper methods
+        * Assertion patterns
+      - Replace template placeholders systematically:
+        * Do not leave any [placeholder] unreplaced
+        * Ensure consistent replacement throughout the file
+      - Maintain template's code style:
+        * Indentation
+        * Comment style
+        * Docstring format
+        * Method ordering
+      - Add endpoint-specific customizations while keeping template structure
+      
+      Template usage instructions:
+      - First action: Load template file using template_file_reader tool
+      - Parse template to identify all placeholders and structure
+      - Create a mapping of placeholders to actual values for each endpoint
+      - Generate tests by replacing placeholders while preserving structure
+      - Never deviate from template's established patterns
+  expected_output: >
+    A complete Python script file generated from the template containing only:
+    - Import statements (as per template)
+    - Test class definitions (following template structure)
+    - Test method definitions (organized as in template)
+    - Helper methods (customized from template)
+    - Code comments (maintaining template style)
+    NO explanations, NO markdown, NO additional text, NO ```python``` text.
+  agent: api_test_generator
+  output_file: "tests/api/test_generated_api.py"
+
+validate_modified_tests:
+  description: >
+    Generate comprehensive pytest API tests
+    
+    For each test scenario, generate:
+    1. Test class/module organization
+    2. Test methods with descriptive names
+    3. Proper HTTP requests using fixtures
+    4. Comprehensive assertions:
+       - Status code validation
+       - Response schema validation
+       - Business logic validation
+       - Error message validation
+    5. Parametrized tests for multiple inputs
+    6. Xray test markers for traceability
+    
+    Follow pytest best practices:
+    - Use fixtures for setup/teardown
+    - Clear test names (test_<endpoint>_<scenario>)
+    - Comprehensive docstrings
+    - Proper error messages in assertions  expected_output: >
+    Python test files containing:
+    - Organized test classes
+    - Complete test methods
+    - Proper assertions
+    - Xray markers
+  agent: api_test_generator
+  expected_output: >
+    A complete Python script file containing only:
+    - Import statements
+    - Function definitions
+    - Class definitions (if needed)
+    - Main execution code
+    - Code comments (using # or docstrings)
+    NO explanations, NO markdown, NO additional text, NO ```python``` text.  
+  output_file: "tests/api/test_validated_api.py"
+
+generate_integration_tests:
+  description: >
+    Generate integration tests for API workflows
+    
+    Create tests for:
+    1. Multi-step API workflows (e.g., create -> update -> delete)
+    2. Cross-service API calls
+    3. Database transaction scenarios
+    4. Async API operations
+    5. Webhook/callback scenarios
+    
+    Integration tests should:
+    - Test realistic user scenarios
+    - Verify data consistency
+    - Handle rollback scenarios
+    - Test error propagation
+  expected_output: >
+    A complete Python script file containing only:
+    - Import statements
+    - Function definitions
+    - Class definitions (if needed)
+    - Main execution code
+    - Code comments (using # or docstrings)
+    NO explanations, NO markdown, NO additional text, NO ```python``` text. 
+  agent: api_test_generator
+  output_file: "tests/integration/test_workflows.py"
+
+validate_modified_tests:
+  description: >
+    Validate all modified and new tests for correctness and compatibility
+    
+    Validation steps:
+    1. Syntax validation for all modified files
+    2. Import validation - ensure all imports resolve
+    3. Fixture compatibility check
+    4. Test isolation verification
+    5. Regression testing - ensure existing tests still pass
+    6. Mock validation for external dependencies
+    
+    Special focus on:
+    - Modified tests don't break existing functionality
+    - New tests integrate properly with test suite
+    - Test data doesn't conflict
+    - Proper cleanup and teardown
+  expected_output: >
+    Comprehensive validation report with:
+    - Syntax and import validation results
+    - Regression test results
+    - Integration compatibility assessment
+    - Issues found and resolutions
+  agent: test_validator
+  output_file: "output/test_validation_report.json"
+
+create_pull_request:
+  description: >
+    Create a pull request with all test changes and comprehensive documentation
+    
+    PR preparation:
+    1. Stage all modified and new test files
+    2. Create comprehensive commit messages
+    3. Generate PR description with:
+       - Summary of changes made
+       - Tests modified vs. tests added
+       - Coverage improvement metrics
+       - Manual testing instructions
+    4. Include links to Jira ticket
+    5. Add appropriate reviewers and labels
+    
+    PR should include:
+    - Clear description of test improvements
+    - Before/after coverage comparison
+    - Instructions for reviewers
+    - Checklist for testing
+  expected_output: >
+    Pull request created with:
+    - All test files committed
+    - Comprehensive description
+    - Proper metadata and links
+    - Review checklist
+  agent: bitbucket_analyst
+  output_file: "output/pull_request_details.json"
+
+execute_and_report:
+  description: >
+    Execute tests in Docker container and generate report
+    
+    Execution steps:
+    1. Build test container with dependencies
+    2. Setup test database
+    3. Execute tests with coverage
+    4. Generate test report
+    5. Create coverage report
+    
+    Report should include:
+    - Test results (pass/fail)
+    - Coverage metrics
+    - Performance metrics
+    - Failed test details
+    - Recommendations
+  expected_output: >
+    Test execution report with:
+    - JUnit XML results
+    - Coverage report
+    - Performance metrics
+    - Executive summary
+  agent: test_validator
+  output_file: "output/test_report.html"
